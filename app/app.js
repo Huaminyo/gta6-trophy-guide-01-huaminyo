@@ -1,17 +1,12 @@
 // The Leonida Field Manual — entry point.
-// Loads the data, builds the view context, wires the static controls, and
-// paints. The guide itself is static files only: it fetches its own three
-// JSON documents and nothing else, so it works with the network off.
-import { TABS, loadDatabase, trophyById } from './data.js';
-import {
-  bumpCount,
-  createFilters,
-  defaultSelection,
-  loadSave,
-  markEarned,
-  persistSave,
-  seedDemo,
-} from './state.js';
+//
+// Boots the Manual, paints the page, and routes every interaction through
+// three delegated listeners on the document (click, change, input) plus the
+// hash router. Nothing is wired per-element: painters rebuild their HTML
+// freely and the listeners keep working, because they match on ids,
+// data attributes, and ancestry instead of stored nodes.
+import { $, $$, TABS } from './lib.js';
+import { Manual } from './store.js';
 import {
   paintAudit,
   paintChecklist,
@@ -22,29 +17,32 @@ import {
   paintRail,
   paintRoadmap,
   paintSources,
-} from './render.js';
+} from './views.js';
 
-const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+let manual = null;
 
-let ctx = null;
+// --- painting --------------------------------------------------------------
 
-function paintAll() {
-  paintAudit(ctx);
-  paintProgress(ctx);
-  paintList(ctx);
-  paintDetail(ctx);
-  paintRail(ctx);
-  paintTab();
+function paintChrome() {
+  paintAudit(manual);
+  paintProgress(manual);
 }
 
 function paintTracker() {
-  paintList(ctx);
-  paintDetail(ctx);
-  paintRail(ctx);
+  paintList(manual);
+  paintDetail(manual);
+  paintRail(manual);
 }
 
-function parseHash() {
+function paintAll() {
+  paintChrome();
+  paintTracker();
+  paintTab();
+}
+
+// --- hash routing ----------------------------------------------------------
+
+function readHash() {
   const raw = (location.hash || '#/tracker').replace(/^#\/?/, '');
   const [tab, idPart] = raw.split('/');
   return {
@@ -54,25 +52,27 @@ function parseHash() {
 }
 
 function paintTab() {
-  const { tab, id } = parseHash();
-  ctx.save.tab = tab;
-  if (id && trophyById(ctx.db, id)) ctx.save.selected = id;
+  const { tab, id } = readHash();
+  manual.save.tab = tab;
+  if (id && manual.trophy(id)) manual.save.selected = id;
   for (const button of $$('.tabs button')) {
     button.classList.toggle('active', button.dataset.tab === tab);
   }
   for (const name of TABS) {
     $(`#tab-${name}`).hidden = name !== tab;
   }
-  if (tab === 'roadmap') paintRoadmap(ctx);
-  if (tab === 'missables') paintMissables(ctx);
-  if (tab === 'sources') paintSources(ctx);
-  if (tab === 'checklist') paintChecklist(ctx);
+  if (tab === 'roadmap') paintRoadmap(manual);
+  if (tab === 'missables') paintMissables(manual);
+  if (tab === 'sources') paintSources(manual);
+  if (tab === 'checklist') paintChecklist(manual);
 }
+
+// --- progress export / import ----------------------------------------------
 
 function exportProgress() {
   const payload = {
-    earned: Object.keys(ctx.save.earned).map(Number),
-    counts: ctx.save.counts,
+    earned: Object.keys(manual.save.earned).map(Number),
+    counts: manual.save.counts,
     exported: new Date().toISOString(),
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -91,13 +91,13 @@ function importProgress(file) {
     try {
       const data = JSON.parse(reader.result);
       if (Array.isArray(data.earned)) {
-        ctx.save.earned = {};
+        manual.save.earned = {};
         for (const id of data.earned) {
-          if (trophyById(ctx.db, id)) ctx.save.earned[id] = true;
+          if (manual.trophy(id)) manual.save.earned[id] = true;
         }
       }
-      if (data.counts && typeof data.counts === 'object') ctx.save.counts = data.counts;
-      persistSave(ctx.save);
+      if (data.counts && typeof data.counts === 'object') manual.save.counts = data.counts;
+      manual.persist();
       paintAll();
     } catch {
       alert('That file is not a valid progress export.');
@@ -106,84 +106,129 @@ function importProgress(file) {
   reader.readAsText(file);
 }
 
-function wireControls() {
-  $('#btn-spoiler').addEventListener('click', () => {
-    ctx.save.spoiler = !ctx.save.spoiler;
-    persistSave(ctx.save);
-    paintAll();
-  });
-  $('#btn-export').addEventListener('click', exportProgress);
-  $('#file-import').addEventListener('change', (event) => {
-    if (event.target.files[0]) importProgress(event.target.files[0]);
-    event.target.value = '';
-  });
-  $('#btn-reset').addEventListener('click', () => {
-    if (!confirm('Reset all progress and counts?')) return;
-    ctx.save.earned = {};
-    ctx.save.counts = {};
-    persistSave(ctx.save);
-    paintAll();
-  });
-  $('#q').addEventListener('input', (event) => {
-    ctx.filters.q = event.target.value.trim();
-    paintList(ctx);
-  });
-  $('#f-kind').addEventListener('change', (event) => {
-    ctx.filters.kind = event.target.value;
-    paintList(ctx);
-  });
-  $('#f-grade').addEventListener('change', (event) => {
-    ctx.filters.grade = event.target.value;
-    paintList(ctx);
-  });
-  $('#f-hide-earned').addEventListener('change', (event) => {
-    ctx.filters.hideEarned = event.target.checked;
-    paintList(ctx);
-  });
-  for (const button of $$('.tabs button')) {
-    button.addEventListener('click', () => {
-      location.hash = `#/${button.dataset.tab}`;
-    });
+// --- delegated interaction -------------------------------------------------
+// One listener per event type, matched against the live DOM. The order
+// inside each handler matters: the most specific match wins first.
+
+function onClick(event) {
+  const target = event.target;
+
+  const tabButton = target.closest('.tabs button');
+  if (tabButton) {
+    location.hash = `#/${tabButton.dataset.tab}`;
+    return;
   }
-  window.addEventListener('hashchange', paintTab);
+
+  if (target.closest('#btn-spoiler')) {
+    manual.save.spoiler = !manual.save.spoiler;
+    manual.persist();
+    paintAll();
+    return;
+  }
+  if (target.closest('#btn-export')) {
+    exportProgress();
+    return;
+  }
+  if (target.closest('#btn-reset')) {
+    if (!confirm('Reset all progress and counts?')) return;
+    manual.save.earned = {};
+    manual.save.counts = {};
+    manual.persist();
+    paintAll();
+    return;
+  }
+
+  if (target.closest('#reveal-btn')) {
+    manual.save.spoiler = false;
+    manual.persist();
+    paintAll();
+    return;
+  }
+
+  const stepButton = target.closest('.stepper button[data-step]');
+  if (stepButton) {
+    const trophy = manual.selected;
+    if (trophy) {
+      manual.addCount(trophy, Number(stepButton.dataset.step));
+      manual.persist();
+      paintAll();
+    }
+    return;
+  }
+
+  // A click on a row's checkbox is handled by the change listener below.
+  if (target.tagName === 'INPUT') return;
+
+  const row = target.closest('li[data-id]');
+  if (row) {
+    manual.save.selected = Number(row.dataset.id);
+    manual.persist();
+    paintTracker();
+  }
 }
+
+function onChange(event) {
+  const target = event.target;
+
+  if (target.id === 'file-import') {
+    if (target.files[0]) importProgress(target.files[0]);
+    target.value = '';
+    return;
+  }
+  if (target.id === 'f-kind') {
+    manual.filters.kind = target.value;
+    paintList(manual);
+    return;
+  }
+  if (target.id === 'f-grade') {
+    manual.filters.grade = target.value;
+    paintList(manual);
+    return;
+  }
+  if (target.id === 'f-hide-earned') {
+    manual.filters.hideEarned = target.checked;
+    paintList(manual);
+    return;
+  }
+
+  const check = target.closest('input[data-check]');
+  if (check) {
+    manual.setEarned(Number(check.dataset.check), check.checked);
+    manual.persist();
+    paintAll();
+    return;
+  }
+
+  const row = target.closest('#trophy-list li[data-id]');
+  if (row && target.tagName === 'INPUT') {
+    manual.setEarned(Number(row.dataset.id), target.checked);
+    manual.persist();
+    paintAll();
+  }
+}
+
+function onInput(event) {
+  if (event.target.id === 'q') {
+    manual.filters.q = event.target.value.trim();
+    paintList(manual);
+  }
+}
+
+// --- boot ------------------------------------------------------------------
 
 async function boot() {
   try {
-    const db = await loadDatabase();
-    const save = loadSave();
-    const filters = createFilters();
-    const hooks = {
-      select(id) {
-        save.selected = id;
-        persistSave(save);
-        paintTracker();
-      },
-      toggleEarned(id, earned) {
-        markEarned(save, id, earned);
-        persistSave(save);
-        paintAll();
-      },
-      reveal() {
-        save.spoiler = false;
-        persistSave(save);
-        paintAll();
-      },
-      bump(trophy, delta) {
-        bumpCount(save, trophy, delta);
-        persistSave(save);
-        paintAll();
-      },
-      repaintAll: paintAll,
-      repaintTracker: paintTracker,
-    };
-    ctx = { db, save, filters, hooks };
+    manual = await Manual.open();
+    if (new URLSearchParams(location.search).has('demo')) manual.seedDemo();
+    manual.ensureSelection();
+    const { id } = readHash();
+    if (id && manual.trophy(id)) manual.save.selected = id;
 
-    if (new URLSearchParams(location.search).has('demo')) seedDemo(db, save);
-    if (!save.selected || !trophyById(db, save.selected)) defaultSelection(db, save);
-    const { id } = parseHash();
-    if (id && trophyById(db, id)) save.selected = id;
-    wireControls();
+    document.addEventListener('click', onClick);
+    document.addEventListener('change', onChange);
+    document.addEventListener('input', onInput);
+    window.addEventListener('hashchange', paintTab);
+
     paintAll();
   } catch (error) {
     document.querySelector('main').innerHTML = '<div class="panel"><p class="empty">The guide data did not load. '

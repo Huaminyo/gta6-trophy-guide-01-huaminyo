@@ -1,5 +1,5 @@
 # Local-only staging artifacts: never committed to the public repo.
-transcripts.tar.gz
-bundle-inputs/
-out/
 node_modules/
+out/
+bundle-inputs/
+transcripts.tar.gz

@@ -39,6 +39,11 @@ numbers on screen are always the numbers in the files: 55/55 official,
 160/160 steps cited, 32 with 2+ sources, 15 sources, 9 disputes,
 29 count trackers, 1 possibly missable, 5 watch, 3 unconfirmed.
 
+Structure: `app/` holds the guide — `lib.js` (constants and helpers),
+`store.js` (the `Manual` class: data + save state + audit math), `views.js`
+(all painters), `app.js` (boot, hash routing, delegated events) — and
+`app/data/` the three JSON documents.
+
 ## Run it
 
 ```sh

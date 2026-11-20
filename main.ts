@@ -1,4 +1,4 @@
-// The Leonida Field Manual — hand-in program (Node 22, stdlib only).
+// The Leonida Field Manual — hand-in program (Node 22, stdlib only, sync fs).
 //
 // It assembles the entry's output directory:
 //   app/          the guide itself, plain static files. Any static server can
@@ -14,10 +14,12 @@
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 //
 // The scorer's limits ride along into buildDossier, so an oversized entry
-// fails here, loudly, instead of at the gate: at most four screenshots of at
-// most 256 KiB each, at most 993 files and 48 MiB under app/, dossier text
-// capped at 160 KiB. Two runs must produce identical bytes.
-import { cp, mkdir, readdir, stat, writeFile } from 'node:fs/promises';
+// fails here, loudly, instead of at the gate: at most four screenshots of
+// at most 256 KiB each, at most 993 files and 48 MiB under app/, dossier
+// text capped at 160 KiB. Two runs must produce identical bytes.
+import {
+  cpSync, existsSync, mkdirSync, readdirSync, writeFileSync,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-frontend.ts';
@@ -25,36 +27,26 @@ import { buildDossier } from './vendor/makefun-frontend.ts';
 const REPO = dirname(fileURLToPath(import.meta.url));
 const OUT = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
-async function exists(path) {
-  try {
-    await stat(path);
-    return true;
-  } catch {
-    return false;
-  }
+function countVisible(dir) {
+  return readdirSync(dir).filter((name) => !name.startsWith('.')).length;
 }
 
-async function main() {
-  await mkdir(OUT, { recursive: true });
-  await cp(join(REPO, 'app'), join(OUT, 'app'), { recursive: true });
+mkdirSync(OUT, { recursive: true });
+cpSync(join(REPO, 'app'), join(OUT, 'app'), { recursive: true });
 
-  const shotsDir = join(REPO, 'screenshots');
-  let shotCount = 0;
-  if (await exists(shotsDir)) {
-    await cp(shotsDir, join(OUT, 'screenshots'), { recursive: true });
-    shotCount = (await readdir(join(OUT, 'screenshots')))
-      .filter((name) => !name.startsWith('.')).length;
-  }
-
-  const dossier = buildDossier(OUT, {
-    text_max_bytes: 163840,
-    screenshots: { max: 4, max_bytes: 262144 },
-    app_max_files: 993,
-    app_max_bytes: 50331648,
-  });
-  const dossierPath = join(OUT, 'dossier.json');
-  await writeFile(dossierPath, dossier);
-  console.log(`dossier.json written (${shotCount} screenshots) -> ${dossierPath}`);
+let shotCount = 0;
+const shotsDir = join(REPO, 'screenshots');
+if (existsSync(shotsDir)) {
+  cpSync(shotsDir, join(OUT, 'screenshots'), { recursive: true });
+  shotCount = countVisible(join(OUT, 'screenshots'));
 }
 
-await main();
+const dossier = buildDossier(OUT, {
+  text_max_bytes: 163840,
+  screenshots: { max: 4, max_bytes: 262144 },
+  app_max_files: 993,
+  app_max_bytes: 50331648,
+});
+const dossierPath = join(OUT, 'dossier.json');
+writeFileSync(dossierPath, dossier);
+console.log(`dossier.json written (${shotCount} screenshots) -> ${dossierPath}`);
