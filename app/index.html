@@ -1,90 +1,139 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Leonida Field Manual — GTA VI Trophy Guide &amp; Tracker</title>
+<meta name="description" content="Offline guide and tracker for all 55 Grand Theft Auto VI PlayStation 5 trophies: cited step-by-step guides, roadmap to the platinum, missable flags, count trackers.">
 <link rel="stylesheet" href="style.css">
+<script src="app.js" defer></script>
 </head>
 <body>
 <header class="masthead">
-  <div class="brand">
-    <div class="brand-kicker">GRAND THEFT AUTO VI &middot; PLAYSTATION 5 &middot; OFFLINE FIELD MANUAL</div>
-    <h1>The Leonida Field Manual</h1>
-    <div class="brand-sub">55 trophies &middot; every claim cited &middot; roadmap, missables &amp; count trackers &middot; works with the network off</div>
-  </div>
-  <div class="progress-block">
-    <div class="progress-big"><span id="earnedCount">0</span><span class="of">/55 earned</span></div>
-    <div class="progress-bar"><div id="progressFill"></div></div>
-    <div class="progress-grades" id="gradeCounts"></div>
-    <div class="progress-points" id="pointsLine"></div>
-  </div>
-  <div class="controls">
-    <label class="ctl spoiler-ctl"><input type="checkbox" id="spoilerToggle"> <span>Spoiler shield</span><small>hides hidden trophies until earned</small></label>
-    <button id="exportBtn" type="button">Export progress</button>
-    <label class="ctl import-ctl">Import progress <input id="importFile" type="file" accept="application/json"></label>
-    <button id="resetBtn" type="button" class="quiet">Reset</button>
-    <div class="saved-note">Saved in this browser &middot; nothing leaves it</div>
+  <div class="masthead-top">
+    <div class="masthead-id">
+      <div class="eyebrow">Grand Theft Auto VI &middot; PlayStation 5 &middot; Field Manual N&ordm; 06</div>
+      <h1>The Leonida Field Manual</h1>
+      <div class="tagline">Every trophy. Every step. Every source. A complete guide &amp; tracker for the 55 PS5 trophies &mdash; works fully offline.</div>
+    </div>
+    <div class="masthead-controls">
+      <button id="btn-spoiler" type="button" class="ctl" title="Hide story trophy names and descriptions until earned">Spoiler shield: ON</button>
+      <button id="btn-export" type="button" class="ctl" title="Download your progress as a JSON file">Export</button>
+      <label class="ctl ctl-file" title="Restore progress from an exported JSON file">Import<input id="file-import" type="file" accept=".json,application/json" hidden></label>
+      <button id="btn-reset" type="button" class="ctl ctl-danger" title="Clear all saved progress on this browser">Reset</button>
+    </div>
   </div>
 </header>
 
-<section class="audit" id="auditStrip" aria-label="Audit strip"></section>
+<div id="audit" class="audit-strip" aria-label="Audit strip"></div>
 
-<section class="alert" id="missableAlert">
-  <span class="alert-tag">READ FIRST</span>
-  <strong>1 POSSIBLY MISSABLE:</strong> <span id="missableAlertText"></span>
-  <a href="#/missables">Open the missables &amp; risks register &rarr;</a>
-</section>
-
-<nav class="tabs" id="tabs" aria-label="Sections">
-  <a href="#/tracker" data-tab="tracker">Tracker</a>
-  <a href="#/roadmap" data-tab="roadmap">Roadmap</a>
-  <a href="#/missables" data-tab="missables">Missables &amp; Risks</a>
-  <a href="#/sources" data-tab="sources">Sources &amp; Disputes</a>
-  <a href="#/100" data-tab="hundred">100% Checklist</a>
+<nav class="tabs" aria-label="Sections">
+  <button type="button" data-tab="tracker">Tracker</button>
+  <button type="button" data-tab="roadmap">Roadmap</button>
+  <button type="button" data-tab="missables">Missables &amp; Risks</button>
+  <button type="button" data-tab="sources">Sources &amp; Disputes</button>
+  <button type="button" data-tab="checklist">100% Checklist</button>
+  <span id="progress-pill" class="progress-pill"></span>
 </nav>
 
-<main id="main">
-  <section id="view-tracker" class="view">
-    <div class="filterbar">
-      <input id="searchBox" type="search" placeholder="Search trophy, mission, character…" aria-label="Search trophies">
-      <div class="chips" id="kindChips"></div>
-      <div class="chips" id="gradeChips"></div>
-      <div class="toggles" id="flagToggles"></div>
+<main>
+  <section id="tab-tracker" class="tabpage">
+    <div class="dashboard">
+      <aside class="col col-list" aria-label="Trophy checklist">
+        <div class="panel">
+          <label class="field">Search trophies
+            <input id="q" type="search" placeholder="Name, keyword, or trophy #&hellip;" autocomplete="off">
+          </label>
+          <div class="filters">
+            <label class="field">Kind
+              <select id="f-kind">
+                <option value="">All kinds</option>
+                <option value="story">Story</option>
+                <option value="missable">Missable / watch</option>
+                <option value="collectible">Collectibles</option>
+                <option value="activity">Activities</option>
+                <option value="crime">Crime &amp; feats</option>
+                <option value="side">Side &amp; strangers</option>
+                <option value="completion">Completion</option>
+              </select>
+            </label>
+            <label class="field">Grade
+              <select id="f-grade">
+                <option value="">All grades</option>
+                <option value="platinum">Platinum</option>
+                <option value="gold">Gold</option>
+                <option value="silver">Silver</option>
+                <option value="bronze">Bronze</option>
+              </select>
+            </label>
+            <label class="check"><input id="f-hide-earned" type="checkbox"> Hide earned</label>
+          </div>
+          <div id="list-meta" class="list-meta"></div>
+          <ul id="trophy-list" class="trophy-list"></ul>
+        </div>
+      </aside>
+
+      <article class="col col-guide" aria-label="Selected trophy guide">
+        <div id="detail" class="panel detail"></div>
+      </article>
+
+      <aside class="col col-rail" aria-label="Next up and sources">
+        <div class="panel">
+          <h2>Next Up</h2>
+          <p class="hint">Next unearned trophies in roadmap order.</p>
+          <ol id="nextup" class="nextup"></ol>
+        </div>
+        <div class="panel">
+          <h2>Sources for this trophy</h2>
+          <ul id="rail-sources" class="rail-sources"></ul>
+          <p class="hint"><a href="#/sources">All 15 sources &amp; 9 disputes &rarr;</a></p>
+        </div>
+        <div class="panel">
+          <h2>Collectibles logged</h2>
+          <div id="collectibles-mini" class="mini-counts"></div>
+        </div>
+      </aside>
     </div>
-    <div class="columns">
-      <section class="col-list" id="checklist" aria-label="Trophy checklist"></section>
-      <section class="col-detail" id="detail" aria-label="Selected trophy guide"></section>
-      <aside class="col-rail" id="rail" aria-label="Next up and sources"></aside>
+  </section>
+
+  <section id="tab-roadmap" class="tabpage" hidden>
+    <div class="panel">
+      <h2>Roadmap to the platinum</h2>
+      <p class="lede">Four phases, built from the official descriptions: story first, then the open-world sweep, then strangers &amp; cleanup, then the platinum itself. Keep a manual save before every story mission &mdash; one trophy may be missable.</p>
+      <div class="setup-strip">
+        <span><strong>Before you start:</strong> manual save slot &middot; no missable story trophies except PMA &middot; cheats disable trophies &middot; counts carry across sessions</span>
+      </div>
+      <div id="roadmap"></div>
     </div>
   </section>
 
-  <section id="view-roadmap" class="view" hidden>
-    <div class="setup-strip">
-      <div><strong>BEFORE YOU START</strong> — Cheats disable trophies and saving, so keep them off for the whole run. There is no mission replay: keep a manual save at the start and end of each chapter (15 manual slots, 1 autosave). The story is 5 chapters, 60–80 hours; free-roam stays open after the story and nothing for 100% is missable.</div>
-      <div class="setup-cites">Sources [1] PowerPyx, [3] GTABase, [14] Mobalytics</div>
+  <section id="tab-missables" class="tabpage" hidden>
+    <div class="panel">
+      <h2>Missables &amp; Risks</h2>
+      <p class="lede">One trophy is possibly missable. Five more deserve a watch. Everything else can be earned after the story.</p>
+      <div id="missables"></div>
     </div>
-    <div id="roadmapBody"></div>
   </section>
 
-  <section id="view-missables" class="view" hidden>
-    <div id="missablesBody"></div>
+  <section id="tab-sources" class="tabpage" hidden>
+    <div class="panel">
+      <h2>Sources &amp; Disputes</h2>
+      <p class="lede">Every guide step cites its sources. Where sources disagree, both versions are shown and the manual states its call.</p>
+      <div id="sources"></div>
+    </div>
   </section>
 
-  <section id="view-sources" class="view" hidden>
-    <div id="sourcesBody"></div>
-  </section>
-
-  <section id="view-hundred" class="view" hidden>
-    <div id="hundredBody"></div>
+  <section id="tab-checklist" class="tabpage" hidden>
+    <div class="panel">
+      <h2>100% Checklist</h2>
+      <p class="lede">The completion picture: collectible totals the game tracks, plus every trophy in one checklist.</p>
+      <div id="checklist"></div>
+    </div>
   </section>
 </main>
 
-<footer class="foot">
-  <span>The Leonida Field Manual — an unofficial fan guide. Names and descriptions are PlayStation's official trophy text; all guide text is written for this entry, in its own words, from the cited sources. No Rockstar Games logo, artwork or game screenshots are used.</span>
-  <span id="footCounts"></span>
+<footer class="colophon">
+  <p>Unofficial fan guide. Not affiliated with Rockstar Games, Take-Two Interactive, or PlayStation. Trophy names, descriptions and grades are quoted as PlayStation publishes them; all guide text is original to this manual. Data read 20 Nov 2026. No network use: this page loads only its own files.</p>
 </footer>
-
-<script type="module" src="app.js"></script>
 </body>
 </html>

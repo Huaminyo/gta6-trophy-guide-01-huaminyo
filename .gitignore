@@ -1,5 +1,5 @@
-# Staging artifacts (transcripts bundle + bundle inputs) — uploaded with
-# `makefun submit --bundle`, never committed to the public repo.
+# Local-only staging artifacts: never committed to the public repo.
 transcripts.tar.gz
 bundle-inputs/
 out/
+node_modules/
