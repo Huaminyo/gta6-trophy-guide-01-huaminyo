@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Leonida Field Manual — GTA VI Trophy Guide &amp; Tracker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="brand">
+    <div class="brand-kicker">GRAND THEFT AUTO VI &middot; PLAYSTATION 5 &middot; OFFLINE FIELD MANUAL</div>
+    <h1>The Leonida Field Manual</h1>
+    <div class="brand-sub">55 trophies &middot; every claim cited &middot; roadmap, missables &amp; count trackers &middot; works with the network off</div>
+  </div>
+  <div class="progress-block">
+    <div class="progress-big"><span id="earnedCount">0</span><span class="of">/55 earned</span></div>
+    <div class="progress-bar"><div id="progressFill"></div></div>
+    <div class="progress-grades" id="gradeCounts"></div>
+    <div class="progress-points" id="pointsLine"></div>
+  </div>
+  <div class="controls">
+    <label class="ctl spoiler-ctl"><input type="checkbox" id="spoilerToggle"> <span>Spoiler shield</span><small>hides hidden trophies until earned</small></label>
+    <button id="exportBtn" type="button">Export progress</button>
+    <label class="ctl import-ctl">Import progress <input id="importFile" type="file" accept="application/json"></label>
+    <button id="resetBtn" type="button" class="quiet">Reset</button>
+    <div class="saved-note">Saved in this browser &middot; nothing leaves it</div>
+  </div>
+</header>
+
+<section class="audit" id="auditStrip" aria-label="Audit strip"></section>
+
+<section class="alert" id="missableAlert">
+  <span class="alert-tag">READ FIRST</span>
+  <strong>1 POSSIBLY MISSABLE:</strong> <span id="missableAlertText"></span>
+  <a href="#/missables">Open the missables &amp; risks register &rarr;</a>
+</section>
+
+<nav class="tabs" id="tabs" aria-label="Sections">
+  <a href="#/tracker" data-tab="tracker">Tracker</a>
+  <a href="#/roadmap" data-tab="roadmap">Roadmap</a>
+  <a href="#/missables" data-tab="missables">Missables &amp; Risks</a>
+  <a href="#/sources" data-tab="sources">Sources &amp; Disputes</a>
+  <a href="#/100" data-tab="hundred">100% Checklist</a>
+</nav>
+
+<main id="main">
+  <section id="view-tracker" class="view">
+    <div class="filterbar">
+      <input id="searchBox" type="search" placeholder="Search trophy, mission, character…" aria-label="Search trophies">
+      <div class="chips" id="kindChips"></div>
+      <div class="chips" id="gradeChips"></div>
+      <div class="toggles" id="flagToggles"></div>
+    </div>
+    <div class="columns">
+      <section class="col-list" id="checklist" aria-label="Trophy checklist"></section>
+      <section class="col-detail" id="detail" aria-label="Selected trophy guide"></section>
+      <aside class="col-rail" id="rail" aria-label="Next up and sources"></aside>
+    </div>
+  </section>
+
+  <section id="view-roadmap" class="view" hidden>
+    <div class="setup-strip">
+      <div><strong>BEFORE YOU START</strong> — Cheats disable trophies and saving, so keep them off for the whole run. There is no mission replay: keep a manual save at the start and end of each chapter (15 manual slots, 1 autosave). The story is 5 chapters, 60–80 hours; free-roam stays open after the story and nothing for 100% is missable.</div>
+      <div class="setup-cites">Sources [1] PowerPyx, [3] GTABase, [14] Mobalytics</div>
+    </div>
+    <div id="roadmapBody"></div>
+  </section>
+
+  <section id="view-missables" class="view" hidden>
+    <div id="missablesBody"></div>
+  </section>
+
+  <section id="view-sources" class="view" hidden>
+    <div id="sourcesBody"></div>
+  </section>
+
+  <section id="view-hundred" class="view" hidden>
+    <div id="hundredBody"></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>The Leonida Field Manual — an unofficial fan guide. Names and descriptions are PlayStation's official trophy text; all guide text is written for this entry, in its own words, from the cited sources. No Rockstar Games logo, artwork or game screenshots are used.</span>
+  <span id="footCounts"></span>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
