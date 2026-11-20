@@ -1,48 +1,60 @@
-// The Leonida Field Manual — entry program (Node 22, standard library only).
+// The Leonida Field Manual — hand-in program (Node 22, stdlib only).
 //
-// What it hands in:
-//   app/         the guide itself — static files (index.html, style.css,
-//                app.js, data/*.json). Any static server can serve it with
-//                app/ at its root; it fetches nothing over the network.
-//   screenshots/ 3 or 4 real browser renders of the guide; the first by name
-//                is the cover.
-//   dossier.json written by the kit's buildDossier library from the copied
-//                files (vendor/makefun-frontend.ts, unchanged).
+// It assembles the entry's output directory:
+//   app/          the guide itself, plain static files. Any static server can
+//                 serve it with app/ as its root; the page fetches nothing
+//                 but its own data files.
+//   screenshots/  four real browser renders of the guide (the first, by name,
+//                 is the cover).
+//   dossier.json  the kit's buildDossier summary, written from the copied
+//                 files by vendor/makefun-frontend.ts (vendored, untouched).
 //
-// Run it locally:
+// Local run:
 //
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 //
-// The scorer's caps are passed to buildDossier so a bad entry fails here,
-// loudly, instead of at the gate: at most 4 screenshots of at most 256 KiB
-// each, at most 993 files and 48 MiB under app/, dossier text capped at
-// 160 KiB. Both grader runs must write identical bytes.
-import { cpSync, existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+// The scorer's limits ride along into buildDossier, so an oversized entry
+// fails here, loudly, instead of at the gate: at most four screenshots of at
+// most 256 KiB each, at most 993 files and 48 MiB under app/, dossier text
+// capped at 160 KiB. Two runs must produce identical bytes.
+import { cp, mkdir, readdir, stat, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-frontend.ts';
 
-const repoRoot = fileURLToPath(new URL('.', import.meta.url));
-const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const REPO = dirname(fileURLToPath(import.meta.url));
+const OUT = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
-function copyTree(src, dest) {
-  mkdirSync(dest, { recursive: true });
-  cpSync(src, dest, { recursive: true });
+async function exists(path) {
+  try {
+    await stat(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-mkdirSync(outDir, { recursive: true });
-copyTree(join(repoRoot, 'app'), join(outDir, 'app'));
-if (existsSync(join(repoRoot, 'screenshots'))) {
-  copyTree(join(repoRoot, 'screenshots'), join(outDir, 'screenshots'));
+async function main() {
+  await mkdir(OUT, { recursive: true });
+  await cp(join(REPO, 'app'), join(OUT, 'app'), { recursive: true });
+
+  const shotsDir = join(REPO, 'screenshots');
+  let shotCount = 0;
+  if (await exists(shotsDir)) {
+    await cp(shotsDir, join(OUT, 'screenshots'), { recursive: true });
+    shotCount = (await readdir(join(OUT, 'screenshots')))
+      .filter((name) => !name.startsWith('.')).length;
+  }
+
+  const dossier = buildDossier(OUT, {
+    text_max_bytes: 163840,
+    screenshots: { max: 4, max_bytes: 262144 },
+    app_max_files: 993,
+    app_max_bytes: 50331648,
+  });
+  const dossierPath = join(OUT, 'dossier.json');
+  await writeFile(dossierPath, dossier);
+  console.log(`dossier.json written (${shotCount} screenshots) -> ${dossierPath}`);
 }
 
-const dossier = buildDossier(outDir, {
-  text_max_bytes: 163840,
-  screenshots: { max: 4, max_bytes: 262144 },
-  app_max_files: 993,
-  app_max_bytes: 50331648,
-});
-writeFileSync(join(outDir, 'dossier.json'), dossier);
-
-const shots = readdirSync(join(outDir, 'screenshots')).filter((f) => !f.startsWith('.'));
-console.log(`dossier written to ${join(outDir, 'dossier.json')} (${shots.length} screenshots)`);
+await main();

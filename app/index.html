@@ -4,19 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Leonida Field Manual — GTA VI Trophy Guide &amp; Tracker</title>
-<meta name="description" content="Offline guide and tracker for all 55 Grand Theft Auto VI PlayStation 5 trophies: cited step-by-step guides, roadmap to the platinum, missable flags, count trackers.">
+<meta name="description" content="An offline guide and tracker for the 55 Grand Theft Auto VI PlayStation 5 trophies: cited step-by-step guides, a roadmap to the platinum, missable flags, count trackers.">
 <link rel="stylesheet" href="style.css">
-<script src="app.js" defer></script>
+<script type="module" src="app.js"></script>
 </head>
 <body>
 <header class="masthead">
-  <div class="masthead-top">
-    <div class="masthead-id">
-      <div class="eyebrow">Grand Theft Auto VI &middot; PlayStation 5 &middot; Field Manual N&ordm; 06</div>
+  <div class="masthead-inner">
+    <div class="brand">
+      <p class="eyebrow">Grand Theft Auto VI &middot; PlayStation 5 &middot; Field Manual N&ordm; 06</p>
       <h1>The Leonida Field Manual</h1>
-      <div class="tagline">Every trophy. Every step. Every source. A complete guide &amp; tracker for the 55 PS5 trophies &mdash; works fully offline.</div>
+      <p class="tagline">Every trophy. Every step. Every source. The complete guide &amp; tracker for all 55 PS5 trophies &mdash; fully offline.</p>
     </div>
-    <div class="masthead-controls">
+    <div class="actions" role="group" aria-label="Progress controls">
       <button id="btn-spoiler" type="button" class="ctl" title="Hide story trophy names and descriptions until earned">Spoiler shield: ON</button>
       <button id="btn-export" type="button" class="ctl" title="Download your progress as a JSON file">Export</button>
       <label class="ctl ctl-file" title="Restore progress from an exported JSON file">Import<input id="file-import" type="file" accept=".json,application/json" hidden></label>
@@ -25,7 +25,7 @@
   </div>
 </header>
 
-<div id="audit" class="audit-strip" aria-label="Audit strip"></div>
+<section id="audit" class="audit-strip" aria-label="Audit strip"></section>
 
 <nav class="tabs" aria-label="Sections">
   <button type="button" data-tab="tracker">Tracker</button>
@@ -39,8 +39,8 @@
 <main>
   <section id="tab-tracker" class="tabpage">
     <div class="dashboard">
-      <aside class="col col-list" aria-label="Trophy checklist">
-        <div class="panel">
+      <div class="col col-list">
+        <section class="panel" aria-label="Trophy checklist">
           <label class="field">Search trophies
             <input id="q" type="search" placeholder="Name, keyword, or trophy #&hellip;" autocomplete="off">
           </label>
@@ -68,31 +68,31 @@
             </label>
             <label class="check"><input id="f-hide-earned" type="checkbox"> Hide earned</label>
           </div>
-          <div id="list-meta" class="list-meta"></div>
+          <p id="list-meta" class="list-meta"></p>
           <ul id="trophy-list" class="trophy-list"></ul>
-        </div>
-      </aside>
+        </section>
+      </div>
 
-      <article class="col col-guide" aria-label="Selected trophy guide">
-        <div id="detail" class="panel detail"></div>
-      </article>
+      <div class="col col-guide">
+        <article id="detail" class="panel detail" aria-label="Selected trophy guide"></article>
+      </div>
 
-      <aside class="col col-rail" aria-label="Next up and sources">
-        <div class="panel">
+      <div class="col col-rail">
+        <section class="panel" aria-label="Next up">
           <h2>Next Up</h2>
           <p class="hint">Next unearned trophies in roadmap order.</p>
           <ol id="nextup" class="nextup"></ol>
-        </div>
-        <div class="panel">
+        </section>
+        <section class="panel" aria-label="Sources for this trophy">
           <h2>Sources for this trophy</h2>
           <ul id="rail-sources" class="rail-sources"></ul>
           <p class="hint"><a href="#/sources">All 15 sources &amp; 9 disputes &rarr;</a></p>
-        </div>
-        <div class="panel">
+        </section>
+        <section class="panel" aria-label="Collectibles logged">
           <h2>Collectibles logged</h2>
           <div id="collectibles-mini" class="mini-counts"></div>
-        </div>
-      </aside>
+        </section>
+      </div>
     </div>
   </section>
 
